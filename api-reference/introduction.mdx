@@ -22,12 +22,40 @@ There are two ways to build API documentation: [OpenAPI](https://mintlify.com/do
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API endpoints require authentication using an API key. Your API key must be included in the request header `x-api-key` for every API call.
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+### API Key Format
+
+API keys follow a standardized format and begin with the prefix `gsk_`. You can generate and manage your API keys through the api dashboard.
+
+```bash
+x-api-key: gsk_your_api_key_here
 ```
+
+### API Key Management
+
+API Keys can be managed through the API Dashboard. Keys can be revoked or assigned/removed scopes.
+
+## Scopes and Permissions
+
+API keys are assigned specific scopes that determine their access level and permissions. Each key must have at least one scope to function properly.
+
+<Warning>
+  API keys without assigned scopes will not have any permissions and all requests will be denied.
+</Warning>
+
+### Available Scopes
+
+<AccordionGroup>
+  <Accordion title="ALL" icon="unlock">
+    Grants full access to all API endpoints and operations. This scope provides unrestricted access to your account resources.
+  </Accordion>
+  
+  <Accordion title="IDENTITIES_READ" icon="eye">
+    Provides read-only access to identity-related endpoints. Keys with this scope can retrieve identity data but cannot create, update, or delete records.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  For security best practices, we recommend using the most restrictive scope necessary for your use case. Avoid using the `ALL` scope unless your integration requires full account access.
+</Tip>
