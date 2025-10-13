@@ -13,7 +13,7 @@ The Genesy API is a RESTful API that can be accessed directly using HTTP request
 All requests require an API key in the `x-api-key` header:
 
 ```bash
-curl https://api.genesy.ai/endpoint \
+curl https://openapi.genesy.ai/endpoint \
   -H "x-api-key: gsk_your_api_key_here" \
   -H "Content-Type: application/json"
 ```
@@ -30,12 +30,12 @@ headers = {
     "Content-Type": "application/json"
 }
 
-response = requests.get("https://api.genesy.ai/endpoint", headers=headers)
+response = requests.get("https://openapi.genesy.ai/endpoint", headers=headers)
 data = response.json()
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.genesy.ai/endpoint', {
+const response = await fetch('https://openapi.genesy.ai/endpoint', {
   headers: {
     'x-api-key': 'gsk_your_api_key_here',
     'Content-Type': 'application/json'
@@ -65,7 +65,7 @@ curl_close($ch);
 require 'net/http'
 require 'json'
 
-uri = URI('https://api.genesy.ai/endpoint')
+uri = URI('https://openapi.genesy.ai/endpoint')
 http = Net::HTTP.new(uri.host, uri.port)
 http.use_ssl = true
 
