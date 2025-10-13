@@ -42,7 +42,7 @@
           },
           {
             "group": "Endpoints",
-            "openapi": "https://api.genesy.ai/open-api/openapi.json"
+            "openapi": "https://openapi.genesy.ai/definitions.json"
           }
         ]
       }
@@ -93,7 +93,6 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/genesy-ai",
       "linkedin": "https://www.linkedin.com/company/genesy-ai"
     }
   }
