@@ -1,8 +1,49 @@
 ---
-title: 'Rate limits'
-description: ''
+title: 'Rate Limits'
+description: 'Understanding API rate limits and best practices for managing your requests'
 ---
 
+## How It Works
+
+Rate limits are enforced using the following rules:
+
+- **Per API Key & Endpoint**: Rate limits are calculated individually for each API key and endpoint combination
+- **Rolling Window**: Limits are enforced in 60-second rolling windows
+- **Blocking Period**: When you exceed the limit, you'll be blocked for 60 seconds
+- **Usage Tracking**: Each API request returns rate limit headers to help you track your usage
+
+## Response Headers
+
+Every API response includes the following headers to help you monitor your rate limit status:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum number of requests allowed in the current window |
+| `X-RateLimit-Remaining` | Number of requests remaining in the current window |
+| `X-RateLimit-Reset-Seconds` | Unix timestamp when your rate limit will reset |
+
+### Example Response Headers
+
+```http
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 75
+X-RateLimit-Reset-Seconds: 1760534477
+```
+
+## Rate Limit Exceeded
+
+When you exceed your rate limit, the API will:
+
+- Return a **429 Too Many Requests** status code
+- Include an `X-RateLimit-Retry-After-Seconds` header indicating when you can retry
+- Return the following error response:
+
+```json
+{
+  "message": "Rate limit exceeded. Please retry after the specified time."
+}
+```
+
 <Note>
-  Please confirm with your Account Manager your API limits.
+  **Authentication Required**: All requests must include a valid API key in the `x-api-key` header. Requests without an API key will receive a **401 Unauthorized** response.
 </Note>
