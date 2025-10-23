@@ -1,0 +1,296 @@
+
+## Overview
+
+The Actions API allows you to programmatically execute enrichments and other actions on your contacts and companies. This endpoint enables you to automate complex data enrichment pipelines by chaining multiple actions together in a single request.
+
+An "actions run" is a concatenated series of actions that executes one or more enrichments on a set of contacts or companies. Each action runs sequentially on each entity.
+
+
+## Request Body
+
+The request must include a `actions` array and **one** of the following target specifiers:
+
+
+| Field             | Type       | Description                          |
+| ----------------- | ---------- | ------------------------------------ |
+| `contactIds`      | `number[]` | Array of contact IDs to process      |
+| `companyIds`      | `number[]` | Array of company IDs to process      |
+| `contactGroupIds` | `number[]` | Array of contact list IDs to process |
+| `companyGroupIds` | `number[]` | Array of company list IDs to process |
+
+
+Each action object in the array must have:
+
+| Field     | Type           | Description                                                     |
+| --------- | -------------- | --------------------------------------------------------------- |
+| `type`    | `ActionType` | The type of action to execute (see Available actions below) |
+| `options` | `custom object`| Configuration options specific to the action type (optional)  |
+
+## Available Actions
+
+#### Get contact from LinkedIn
+
+Scrapes complete profile information from LinkedIn.
+
+**Type**: `SCRAPE_LEAD_FROM_LINKEDIN`
+
+**Options:**
+
+```typescript
+{
+  skipCompanyScrape?: boolean  // Skip scraping associated company data
+}
+```
+
+**Use When:** You have LinkedIn URLs and want complete profile data
+
+---
+
+#### Enrich with email
+
+Finds professional email addresses for contacts.
+
+**Type**: `ENRICH_WITH_EMAIL`
+
+**Options:**
+
+```typescript
+{
+  sortedApis?: string[]           // e.g., ["CREDITS", "APOLLO", "DROPCONTACT"]
+  stopType?: "NONE" | "VERIFIED_EMAIL" | "PHONE"
+  speed?: "SLOW" | "FAST"         // SLOW = more thorough, FAST = quicker
+  maxTimeToWait?: number          // Milliseconds
+}
+```
+
+**Use When:** You need to find email addresses for contacts
+
+**Tip:** Combine with `VERIFY_LEAD_EMAIL` for best results
+
+---
+
+#### Enrich with phone
+
+Finds phone numbers for contacts.
+
+**Type**: `ENRICH_WITH_PHONE`
+
+**Options:**
+
+```typescript
+{
+  sortedApis?: string[]           // e.g., ["CREDITS", "APOLLO", "DROPCONTACT"]
+  stopType?: "NONE" | "VERIFIED_EMAIL" | "PHONE"
+  speed?: "SLOW" | "FAST"
+  maxTimeToWait?: number          // Milliseconds
+}
+```
+
+**Use When:** You need phone numbers for outreach
+
+---
+
+#### Verify contact email addresses
+
+Verifies email addresses for deliverability.
+
+**Type**: `VERIFY_LEAD_EMAIL`
+
+**Options:** None required
+
+**Use When:** You have email addresses and want to verify they're valid before sending
+
+**Best Practice:** Always verify emails before running email campaigns
+
+---
+
+#### Verify contact phone number
+
+Verifies phone numbers for validity.
+
+**Type**: `VERIFY_LEAD_PHONE`
+
+**Options:** None required
+
+**Use When:** You have phone numbers and want to verify they're valid
+
+---
+
+#### Export to CRM
+
+Exports enriched contact or company data to your connected CRM.
+
+**Type**: `EXPORT_TO_CRM`
+
+**Options:**
+
+```typescript
+{
+  CRMOwnerId?: {
+    value: string      // CRM owner/user ID
+    override: boolean  // Whether to override existing owner
+  }
+  promptLeadFieldsCRMMapping?: {
+    [fieldName: string]: {
+      value: string
+      override: boolean
+    }
+  }
+  promptCompanyFieldsCRMMapping?: {
+    [fieldName: string]: {
+      value: string
+      override: boolean
+    }
+  }
+  overwriteFields?: {
+    [fieldName: string]: boolean
+  }
+  associationType?: string
+  exportAssociatedObject?: boolean  // Also export company when exporting contact
+}
+```
+
+**Use When:** You want to sync enriched data to your CRM
+
+**Tip:** Use this as the last step in your enrichment pipeline
+
+---
+
+## Checking Actions Status
+
+You can check actions status on the `/v1/actions/{actionsId}/status` endpoint.
+
+---
+
+## Best Practices
+
+### 1. Order Your Actions Strategically
+
+Place actions in order of dependency:
+
+```json
+{
+    "actions": [
+        // First, get the data
+        { "type": "SCRAPE_LEAD_FROM_LINKEDIN" },
+
+        // Then, enrich it
+        { "type": "ENRICH_WITH_EMAIL" },
+
+        // Then, verify it
+        { "type": "VERIFY_LEAD_EMAIL" },
+
+        // Finally, export it
+        { "type": "EXPORT_TO_CRM" }
+    ]
+}
+```
+
+### 2. Use Stop Types Efficiently
+
+Use `stopType` to avoid unnecessary API calls:
+
+```json
+{
+    "type": "ENRICH_WITH_EMAIL",
+    "options": {
+        "stopType": "VERIFIED_EMAIL" // Stop when verified email found
+    }
+}
+```
+
+### 3. Verify Before Exporting
+
+Always verify emails before sending to CRM or using in campaigns:
+
+```json
+{
+    "actions": [
+        { "type": "ENRICH_WITH_EMAIL" },
+        { "type": "VERIFY_LEAD_EMAIL" }, // Critical step!
+        { "type": "EXPORT_TO_CRM" }
+    ]
+}
+```
+
+### 5. Monitor Credit Usage
+
+Some actions consume credits. Check costs before running on large batches, you can use the credits endpoints.
+
+---
+
+## Common Use Cases
+
+### New Lead Qualification Pipeline
+
+**Goal:** Quickly qualify and enrich new leads from an event
+
+```json
+{
+  "actions": [
+    {"type": "SCRAPE_LEAD_FROM_LINKEDIN"},
+    {"type": "ENRICH_WITH_EMAIL"},
+    {"type": "VERIFY_LEAD_EMAIL"},
+    {
+      "type": "EXPORT_TO_CRM",
+      "options": {
+        "CRMOwnerId": {"value": "sales_rep_123", "override": false}
+      }
+    }
+  ],
+  "contactGroupIds": [...]
+}
+```
+
+**Result:** Fully enriched, verified leads in your CRM ready for outreach
+
+---
+
+### List Cleaning & Verification
+
+**Goal:** Clean and verify an existing contact list
+
+```json
+{
+  "actions": [
+    {"type": "VERIFY_LEAD_EMAIL"},
+    {
+      "type": "EXPORT_TO_CRM",
+      "options": {
+        "promptLeadFieldsCRMMapping": {
+          "Email_Verified__c": {
+            "value": "true",
+            "override": true
+          }
+        }
+      }
+    }
+  ],
+  "contactGroupIds": [...]
+}
+```
+
+**Result:** Verified contact list with verification status updated in CRM
+
+---
+
+### Multi-Channel Outreach Preparation
+
+**Goal:** Prepare contacts for both email and phone outreach
+
+```json
+{
+  "actions": [
+    {
+      "type": "ENRICH_WITH_EMAIL",
+      "options": {"stopType": "VERIFIED_EMAIL"}
+    },
+    {"type": "ENRICH_WITH_PHONE"},
+    {"type": "VERIFY_LEAD_EMAIL"},
+    {"type": "EXPORT_TO_CRM"}
+  ],
+  "contactIds": [...]
+}
+```
+
+**Result:** Contacts with verified emails and phone numbers ready for SDR team
