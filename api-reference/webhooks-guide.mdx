@@ -1,0 +1,168 @@
+
+## Overview
+
+Webhooks allow you to receive real-time notifications when events occur in your Genesy campaigns. Instead of polling the API for updates, Genesy will send HTTP POST requests to your specified URL whenever subscribed events happen.
+
+Think of webhooks as "reverse API calls" - Genesy calls your application when something interesting happens, like a contact replying to a message or accepting a connection request.
+
+## How Webhooks Work
+
+1. **Create a subscription**: Tell Genesy which events you want to track and where to send them
+2. **Genesy monitors events**: As your campaigns run, Genesy watches for the events you subscribed to
+3. **Receive notifications**: When an event occurs, Genesy sends a POST request to your URL with event details
+4. **Process the data**: Your application receives and processes the webhook payload
+
+## Available Events
+
+| Event Type                       | Triggered When                                              |
+| -------------------------------- | ----------------------------------------------------------- |
+| `CONNECTION_REQUEST_SENT`        | A LinkedIn connection request is sent to a contact          |
+| `CONNECTION_REQUEST_ACCEPTED`    | A contact accepts a LinkedIn connection request             |
+| `LINKEDIN_MESSAGE_SENT`          | A LinkedIn message is sent to a contact                     |
+| `EMAIL_SENT`                     | An email is sent to a contact                               |
+| `INMAIL_SENT`                    | A LinkedIn InMail is sent to a contact                      |
+| `MESSAGE_REPLIED`                | A contact replies to a message (LinkedIn, email, or InMail) |
+| `POST_LIKED`                     | A LinkedIn post is liked                                    |
+| `PROFILE_VISITED`                | A LinkedIn profile is visited                               |
+
+## Managing Webhooks
+
+You can manage your webhook subscriptions in two ways:
+
+1. **From the Dashboard**: Visit [app.genesy.ai/api-access](https://app.genesy.ai/api-access) to create, view, update, and delete subscriptions with a visual interface
+2. **Via API**: Use the `/v1/webhooks` endpoints to programmatically manage subscriptions, view delivery logs, and more
+
+## Creating a Webhook Subscription
+
+You can create webhook subscriptions from [the API](https://docs.genesy.ai/api-reference/webhooks/create-webhook-subscription) or from the [dasboard](https://app.genesy.ai/api-access).
+
+**Parameters:**
+
+- `name` (required): Identifier for your webhook subscription
+- `url` (required): Your endpoint URL where webhooks will be sent
+- `events` (required): Array of event types to subscribe to
+- `secret` (optional): A secret key that will be sent in the `X-Webhook-Secret` header for authentication
+- `campaignIds` (optional): Only receive events from specific campaigns. If empty or not provided, you'll receive events from all campaigns
+- `customFields` (optional): Additional contact/company fields to include in the webhook payload
+
+## Webhook Payload Example
+
+When a connection request is sent, you'll receive:
+
+```json
+{
+  "eventType": "CONNECTION_REQUEST_SENT",
+  "timestamp": "2025-11-03T10:30:00.000Z",
+  "data": {
+    "contact": {
+      "id": 789,
+      "firstName": "John",
+      "lastName": "Doe",
+      "professionalEmail": "john.doe@example.com",
+      "linkedInProfileUrl": "https://linkedin.com/in/johndoe",
+      "jobTitle": "CEO",
+      "companyId": 123
+    },
+    "campaign": {
+      "id": 456,
+      "name": "Outbound Campaign Q4",
+      "status": "ACTIVE"
+    },
+    "customMessage": "Hi John, I would like to connect with you",
+    "sentAt": "2025-11-03T10:30:00.000Z"
+  }
+}
+```
+
+## Testing Your Webhook
+
+### Quick Test with `webhook.site`
+
+Before building your endpoint, test with [webhook.site](https://webhook.site/):
+
+1. Go to [webhook.site](https://webhook.site/) - you'll get a unique URL
+2. Copy the generated URL
+3. Create a webhook subscription pointing to that URL:
+4. Trigger an event in your campaign (or use the test endpoint below)
+5. Watch the webhook appear in real-time on webhook.site
+
+### Test Webhook Endpoint
+
+Send a test payload to verify your webhook is configured correctly. This sends a sample event to your webhook URL so you can verify it's receiving data properly.
+
+## Best Practices
+
+### Respond Quickly
+
+Your endpoint should respond with a `2xx` status code within a few seconds. Process data asynchronously if needed.
+
+### Verify the Secret
+
+Always verify the webhook secret to ensure requests are from Genesy.
+
+### Handle Retries Gracefully
+
+Genesy retries failed deliveries (30s, 5min, 50min). Make your endpoint idempotent.
+
+### Monitor Delivery Logs
+
+Regularly check delivery logs from the [API Access dashboard](https://app.genesy.ai/api-access) or via the API to catch and fix issues.
+
+## Common Use Cases
+
+### Sync Replies to CRM
+
+Update your CRM when contacts reply:
+
+```json
+{
+  "url": "https://api.your-company.com/webhooks/update-crm",
+  "secret": "your-secret",
+  "events": ["MESSAGE_REPLIED"],
+  "customFields": ["salesforceId", "hubspotId"]
+}
+```
+
+### Track Campaign Performance
+
+Monitor all outreach activity in real-time:
+
+```json
+{
+  "url": "https://analytics.your-company.com/webhooks/track",
+  "events": [
+    "CONNECTION_REQUEST_SENT",
+    "CONNECTION_REQUEST_ACCEPTED",
+    "LINKEDIN_MESSAGE_SENT",
+    "EMAIL_SENT",
+    "MESSAGE_REPLIED"
+  ],
+  "campaignIds": [789]
+}
+```
+
+### Notify Sales Team
+
+Send Slack notifications when contacts reply:
+
+```json
+{
+  "url": "https://your-api.com/webhooks/notify-slack",
+  "events": ["MESSAGE_REPLIED", "CONNECTION_REQUEST_ACCEPTED"]
+}
+```
+
+## Troubleshooting
+
+| Issue | Solution |
+| ----- | -------- |
+| Not receiving webhooks | Check delivery logs, verify your URL is publicly accessible |
+| Webhooks timing out | Respond with 200 immediately, process data asynchronously |
+| Duplicate events | Implement idempotency using event timestamp + type as unique key |
+| Missing data | Add `customFields` to your subscription |
+| Unknown webhook source | Verify `X-Webhook-Secret` header matches your secret |
+
+---
+
+**Need Help?** Check the [full API reference](https://docs.genesy.ai/api-reference/webhooks/conversation-events-webhook) or contact support.
+

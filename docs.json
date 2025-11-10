@@ -38,7 +38,8 @@
             "pages": [
               "api-reference/introduction",
               "api-reference/rate-limits",
-              "api-reference/actions-guide"
+              "api-reference/actions-guide",
+              "api-reference/webhooks-guide"
             ]
           },
           {
