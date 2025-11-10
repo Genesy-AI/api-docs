@@ -22,7 +22,7 @@
           {
             "group": "Integrate with",
             "pages": [
-              "essentials/hubspot",
+              "essentials/make",
               "essentials/zapier",
               "essentials/n8n",
               "essentials/http"
