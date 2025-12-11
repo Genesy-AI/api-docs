@@ -15,9 +15,7 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": [
-              "index"
-            ]
+            "pages": ["index"]
           },
           {
             "group": "Integrate with",
@@ -25,7 +23,8 @@
               "essentials/make",
               "essentials/zapier",
               "essentials/n8n",
-              "essentials/http"
+              "essentials/http",
+              "essentials/custom-crm"
             ]
           }
         ]
@@ -41,6 +40,10 @@
               "api-reference/actions-guide",
               "api-reference/webhooks-guide"
             ]
+          },
+          {
+            "group": "Custom CRM",
+            "pages": ["api-reference/custom-crm-interface"]
           },
           {
             "group": "Endpoints",
@@ -83,15 +86,15 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
