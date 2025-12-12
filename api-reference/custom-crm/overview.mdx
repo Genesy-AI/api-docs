@@ -1,0 +1,133 @@
+---
+title: 'Overview'
+description: 'API specification for endpoints you must implement in your CRM'
+icon: 'server'
+---
+
+<Warning>
+  **Important**: This section describes the API endpoints that **your system must implement** to integrate with Genesy. These are not Genesy API endpoints — they are the interface specification that Genesy will call on your CRM.
+</Warning>
+
+## Introduction
+
+To integrate your custom CRM with Genesy, your system must expose a set of HTTP endpoints that Genesy will call. This documentation covers the exact specification your API must follow.
+
+<Info>
+  All endpoints must be accessible via HTTPS and accept the API key header you configured during connection setup.
+</Info>
+
+## Required Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Health Endpoint" icon="heart-pulse" href="#health-endpoint">
+    Connection validation endpoint
+  </Card>
+  <Card title="Tasks API" icon="list-check" href="/api-reference/custom-crm/tasks">
+    Task CRUD and batch operations
+  </Card>
+</CardGroup>
+
+---
+
+## Authentication
+
+Your API must validate the API key sent in the header you specified during setup (default: `X-API-Key`).
+
+```bash
+# Genesy will send requests like this:
+GET /health HTTP/1.1
+Host: your-api.com
+X-API-Key: your-configured-secret
+Content-Type: application/json
+Accept: application/json
+```
+
+<Tip>
+  Return `401 Unauthorized` if the API key is invalid or missing.
+</Tip>
+
+---
+
+## Health Endpoint
+
+<Card title="Your Implementation Required" icon="triangle-exclamation" color="#f59e0b">
+  This endpoint must be implemented on **your server**
+</Card>
+
+Genesy calls this endpoint to validate the connection during setup and periodic health checks.
+
+### Request
+
+```http
+GET /health
+```
+
+### Headers
+
+| Header | Description |
+|--------|-------------|
+| `X-API-Key` (or your custom header) | Your API key for authentication |
+| `Content-Type` | `application/json` |
+| `Accept` | `application/json` |
+
+### Response
+
+<Tabs>
+  <Tab title="Success (200)">
+    Return any `2xx` status code to indicate your API is healthy and the authentication is valid.
+    
+    ```json
+    {
+      "status": "ok"
+    }
+    ```
+    
+    <Note>The response body is not validated — only the HTTP status code matters.</Note>
+  </Tab>
+  <Tab title="Unauthorized (401)">
+    Return `401` if the API key is invalid.
+    
+    ```json
+    {
+      "error": "Invalid API key"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Error Handling
+
+Your API should return appropriate HTTP status codes:
+
+| Status Code | When to Use |
+|-------------|-------------|
+| `200` / `201` | Success |
+| `400` | Invalid request body or parameters |
+| `401` | Invalid or missing API key |
+| `404` | Resource not found |
+| `500` | Server error |
+
+Error responses should include a message:
+
+```json
+{
+  "error": "Task not found",
+  "message": "No task exists with ID: task-xyz"
+}
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tasks API" icon="list-check" href="/api-reference/custom-crm/tasks">
+    View the complete Tasks API specification
+  </Card>
+  <Card title="Examples" icon="code" href="/api-reference/custom-crm/examples">
+    See complete implementation examples
+  </Card>
+</CardGroup>
+
