@@ -43,7 +43,11 @@
           },
           {
             "group": "Custom CRM",
-            "pages": ["api-reference/custom-crm-interface"]
+            "pages": [
+              "api-reference/custom-crm/overview",
+              "api-reference/custom-crm/tasks",
+              "api-reference/custom-crm/examples"
+            ]
           },
           {
             "group": "Endpoints",

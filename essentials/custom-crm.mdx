@@ -39,11 +39,11 @@ sequenceDiagram
 Before connecting, your CRM must expose the following:
 
 <CardGroup cols={2}>
-  <Card title="Health Endpoint" icon="heart-pulse" href="/api-reference/custom-crm-interface#health-endpoint">
+  <Card title="Health Endpoint" icon="heart-pulse" href="/api-reference/custom-crm/overview#health-endpoint">
     A `GET /health` endpoint for connection validation
   </Card>
-  <Card title="Tasks API" icon="list-check" href="/api-reference/custom-crm-interface#tasks-endpoints">
-    Task CRUD endpoints following our interface specification
+  <Card title="Tasks API" icon="list-check" href="/api-reference/custom-crm/tasks">
+    Task CRUD and batch endpoints following our interface specification
   </Card>
 </CardGroup>
 
@@ -71,7 +71,7 @@ Accept: application/json
 
 ### Step 1: Implement the Required Endpoints
 
-Before connecting, ensure your CRM implements the required interface. See the [Custom CRM Interface Reference](/api-reference/custom-crm-interface) for detailed specifications.
+Before connecting, ensure your CRM implements the required interface. See the [Custom CRM API Reference](/api-reference/custom-crm/overview) for detailed specifications.
 
 ### Step 2: Test the Connection
 
@@ -125,17 +125,19 @@ curl -X DELETE https://openapi.genesy.ai/v1/custom-crm/disconnect \
 
 <CardGroup cols={2}>
   <Card
-    title="Interface Specification"
-    icon="code"
-    href="/api-reference/custom-crm-interface"
+    title="Tasks API"
+    icon="list-check"
+    href="/api-reference/custom-crm/tasks"
   >
-    View the detailed API specification your CRM must implement
+    View the complete Tasks API specification
   </Card>
   <Card
-    title="API Reference"
-    icon="book"
-    href="/api-reference/introduction"
+    title="Examples"
+    icon="code"
+    href="/api-reference/custom-crm/examples"
   >
-    Explore Genesy API endpoints for managing your Custom CRM connection
+    See complete implementation examples in Node.js, Python, and Go
   </Card>
 </CardGroup>
+
+

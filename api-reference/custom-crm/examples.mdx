@@ -1,0 +1,455 @@
+---
+title: 'Examples'
+description: 'Complete implementation examples for Custom CRM integration'
+icon: 'code'
+---
+
+## Complete Implementation Examples
+
+Below are full working examples of a Custom CRM API implementation in popular frameworks.
+
+<CodeGroup>
+
+```javascript Node.js (Express)
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+// Middleware to validate API key
+const validateApiKey = (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.API_KEY) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+  next();
+};
+
+app.use(validateApiKey);
+
+// Health endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Create task
+app.post('/tasks', async (req, res) => {
+  const { subject, description, type, ownerId, dueDate, contactId, companyId } = req.body;
+  
+  const task = await db.tasks.create({
+    data: {
+      subject,
+      description,
+      type,
+      ownerId,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      contactId,
+      companyId,
+      completed: false,
+    },
+  });
+  
+  res.status(201).json(task);
+});
+
+// Get task
+app.get('/tasks/:taskId', async (req, res) => {
+  const task = await db.tasks.findUnique({ where: { id: req.params.taskId } });
+  
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+  
+  res.json(task);
+});
+
+// Get tasks batch
+app.post('/tasks/batch', async (req, res) => {
+  const { ids } = req.body;
+  
+  const tasks = await db.tasks.findMany({
+    where: { id: { in: ids } },
+  });
+  
+  res.json(tasks);
+});
+
+// Update task
+app.patch('/tasks/:taskId', async (req, res) => {
+  const { completed } = req.body;
+  
+  const task = await db.tasks.update({
+    where: { id: req.params.taskId },
+    data: {
+      completed,
+      completedAt: completed ? new Date() : null,
+    },
+  });
+  
+  res.json(task);
+});
+
+// Complete tasks batch
+app.patch('/tasks/batch', async (req, res) => {
+  const { ids, completed } = req.body;
+  
+  await db.tasks.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      completed,
+      completedAt: completed ? new Date() : null,
+    },
+  });
+  
+  // Return updated tasks
+  const updatedTasks = await db.tasks.findMany({
+    where: { id: { in: ids } },
+  });
+  
+  res.json(updatedTasks);
+});
+
+app.listen(3000);
+```
+
+```python Python (FastAPI)
+from fastapi import FastAPI, Header, HTTPException, Depends
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional, List
+import uuid
+
+app = FastAPI()
+
+# In-memory storage (replace with your database)
+tasks = {}
+
+def validate_api_key(x_api_key: str = Header()):
+    if x_api_key != "your-secret-key":
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return x_api_key
+
+class TaskCreate(BaseModel):
+    subject: str
+    description: Optional[str] = None
+    type: Optional[str] = None
+    ownerId: Optional[str] = None
+    dueDate: Optional[str] = None
+    contactId: Optional[str] = None
+    companyId: Optional[str] = None
+
+class TaskUpdate(BaseModel):
+    completed: Optional[bool] = None
+
+class TaskBatchGet(BaseModel):
+    ids: List[str]
+
+class TaskBatchUpdate(BaseModel):
+    ids: List[str]
+    completed: bool
+
+@app.get("/health")
+async def health(api_key: str = Depends(validate_api_key)):
+    return {"status": "ok"}
+
+@app.post("/tasks")
+async def create_task(task: TaskCreate, api_key: str = Depends(validate_api_key)):
+    task_id = str(uuid.uuid4())
+    tasks[task_id] = {
+        "id": task_id,
+        **task.dict(),
+        "completed": False,
+        "completedAt": None
+    }
+    return tasks[task_id]
+
+@app.get("/tasks/{task_id}")
+async def get_task(task_id: str, api_key: str = Depends(validate_api_key)):
+    if task_id not in tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks[task_id]
+
+@app.post("/tasks/batch")
+async def get_tasks_batch(batch: TaskBatchGet, api_key: str = Depends(validate_api_key)):
+    return [tasks[tid] for tid in batch.ids if tid in tasks]
+
+@app.patch("/tasks/{task_id}")
+async def update_task(task_id: str, update: TaskUpdate, api_key: str = Depends(validate_api_key)):
+    if task_id not in tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    if update.completed is not None:
+        tasks[task_id]["completed"] = update.completed
+        tasks[task_id]["completedAt"] = datetime.utcnow().isoformat() if update.completed else None
+    
+    return tasks[task_id]
+
+@app.patch("/tasks/batch")
+async def complete_tasks_batch(batch: TaskBatchUpdate, api_key: str = Depends(validate_api_key)):
+    updated = []
+    for tid in batch.ids:
+        if tid in tasks:
+            tasks[tid]["completed"] = batch.completed
+            tasks[tid]["completedAt"] = datetime.utcnow().isoformat() if batch.completed else None
+            updated.append(tasks[tid])
+    return updated
+```
+
+```go Go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+    "sync"
+    "time"
+)
+
+var (
+    tasks   = make(map[string]Task)
+    tasksMu sync.RWMutex
+    apiKey  = "your-secret-key"
+)
+
+type Task struct {
+    ID          string  `json:"id"`
+    Subject     string  `json:"subject"`
+    Description *string `json:"description,omitempty"`
+    Type        *string `json:"type,omitempty"`
+    OwnerID     *string `json:"ownerId,omitempty"`
+    DueDate     *string `json:"dueDate,omitempty"`
+    ContactID   *string `json:"contactId,omitempty"`
+    CompanyID   *string `json:"companyId,omitempty"`
+    Completed   bool    `json:"completed"`
+    CompletedAt *string `json:"completedAt,omitempty"`
+}
+
+type BatchGetRequest struct {
+    IDs []string `json:"ids"`
+}
+
+type BatchUpdateRequest struct {
+    IDs       []string `json:"ids"`
+    Completed bool     `json:"completed"`
+}
+
+func validateAPIKey(next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Header.Get("X-API-Key") != apiKey {
+            http.Error(w, `{"error": "Invalid API key"}`, http.StatusUnauthorized)
+            return
+        }
+        next(w, r)
+    }
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func getTasksBatchHandler(w http.ResponseWriter, r *http.Request) {
+    var req BatchGetRequest
+    json.NewDecoder(r.Body).Decode(&req)
+
+    tasksMu.RLock()
+    result := make([]Task, 0)
+    for _, id := range req.IDs {
+        if task, ok := tasks[id]; ok {
+            result = append(result, task)
+        }
+    }
+    tasksMu.RUnlock()
+
+    json.NewEncoder(w).Encode(result)
+}
+
+func completeTasksBatchHandler(w http.ResponseWriter, r *http.Request) {
+    var req BatchUpdateRequest
+    json.NewDecoder(r.Body).Decode(&req)
+
+    now := time.Now().UTC().Format(time.RFC3339)
+    
+    tasksMu.Lock()
+    result := make([]Task, 0)
+    for _, id := range req.IDs {
+        if task, ok := tasks[id]; ok {
+            task.Completed = req.Completed
+            if req.Completed {
+                task.CompletedAt = &now
+            } else {
+                task.CompletedAt = nil
+            }
+            tasks[id] = task
+            result = append(result, task)
+        }
+    }
+    tasksMu.Unlock()
+
+    json.NewEncoder(w).Encode(result)
+}
+
+func main() {
+    http.HandleFunc("/health", validateAPIKey(healthHandler))
+    http.HandleFunc("POST /tasks/batch", validateAPIKey(getTasksBatchHandler))
+    http.HandleFunc("PATCH /tasks/batch", validateAPIKey(completeTasksBatchHandler))
+    // ... other handlers
+    http.ListenAndServe(":3000", nil)
+}
+```
+
+</CodeGroup>
+
+---
+
+## Minimal Implementation
+
+If you want to get started quickly, here's a minimal implementation with just the essential endpoints:
+
+```javascript Node.js (Minimal)
+const express = require('express');
+const { v4: uuidv4 } = require('uuid');
+
+const app = express();
+app.use(express.json());
+
+const API_KEY = process.env.API_KEY;
+const tasks = new Map();
+
+// Auth middleware
+app.use((req, res, next) => {
+  if (req.headers['x-api-key'] !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
+
+// Health
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Create task
+app.post('/tasks', (req, res) => {
+  const task = { id: uuidv4(), ...req.body, completed: false };
+  tasks.set(task.id, task);
+  res.status(201).json(task);
+});
+
+// Get task
+app.get('/tasks/:id', (req, res) => {
+  const task = tasks.get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'Not found' });
+  res.json(task);
+});
+
+// Get tasks batch
+app.post('/tasks/batch', (req, res) => {
+  const result = req.body.ids
+    .map(id => tasks.get(id))
+    .filter(Boolean);
+  res.json(result);
+});
+
+// Update task
+app.patch('/tasks/:id', (req, res) => {
+  const task = tasks.get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'Not found' });
+  
+  Object.assign(task, req.body);
+  if (req.body.completed) task.completedAt = new Date().toISOString();
+  res.json(task);
+});
+
+// Complete tasks batch
+app.patch('/tasks/batch', (req, res) => {
+  const { ids, completed } = req.body;
+  const updated = ids.map(id => {
+    const task = tasks.get(id);
+    if (task) {
+      task.completed = completed;
+      task.completedAt = completed ? new Date().toISOString() : null;
+    }
+    return task;
+  }).filter(Boolean);
+  res.json(updated);
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+---
+
+## Testing Checklist
+
+Before connecting to Genesy, ensure all these tests pass:
+
+<AccordionGroup>
+  <Accordion title="Health Endpoint">
+    ```bash
+    curl -X GET https://your-api.com/health \
+      -H "X-API-Key: your-secret-key"
+    ```
+    
+    Expected: `200 OK` with any JSON response
+  </Accordion>
+  
+  <Accordion title="Create Task">
+    ```bash
+    curl -X POST https://your-api.com/tasks \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"subject": "Test task"}'
+    ```
+    
+    Expected: `201 Created` with task object containing `id`
+  </Accordion>
+  
+  <Accordion title="Get Task">
+    ```bash
+    curl -X GET https://your-api.com/tasks/TASK_ID \
+      -H "X-API-Key: your-secret-key"
+    ```
+    
+    Expected: `200 OK` with task object
+  </Accordion>
+  
+  <Accordion title="Get Tasks Batch">
+    ```bash
+    curl -X POST https://your-api.com/tasks/batch \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"ids": ["TASK_ID_1", "TASK_ID_2"]}'
+    ```
+    
+    Expected: `200 OK` with array of tasks
+  </Accordion>
+  
+  <Accordion title="Complete Task">
+    ```bash
+    curl -X PATCH https://your-api.com/tasks/TASK_ID \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"completed": true}'
+    ```
+    
+    Expected: `200 OK` with updated task
+  </Accordion>
+  
+  <Accordion title="Complete Tasks Batch">
+    ```bash
+    curl -X PATCH https://your-api.com/tasks/batch \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"ids": ["TASK_ID_1", "TASK_ID_2"], "completed": true}'
+    ```
+    
+    Expected: `200 OK` with array of updated tasks
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<Card title="Connect Your CRM" icon="plug" href="/essentials/custom-crm#connecting-your-crm">
+  Once your implementation is complete, connect your CRM to Genesy
+</Card>
+

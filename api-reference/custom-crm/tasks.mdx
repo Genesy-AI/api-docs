@@ -1,0 +1,299 @@
+---
+title: 'Tasks'
+description: 'Task management endpoints for your Custom CRM'
+icon: 'list-check'
+---
+
+<Card title="Your Implementation Required" icon="triangle-exclamation" color="#f59e0b">
+  These endpoints must be implemented on **your server**
+</Card>
+
+Genesy creates tasks in your CRM when sequences trigger task actions. Your API must implement the following task endpoints.
+
+---
+
+## Single Task Operations
+
+### Create Task
+
+Creates a new task in your CRM.
+
+```http
+POST /tasks
+```
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `subject` | string | ✅ Yes | The task title/subject |
+| `description` | string | No | Detailed description or notes for the task |
+| `type` | string | No | Task type (e.g., "call", "email", "meeting") |
+| `ownerId` | string | No | ID of the user who owns the task in your system |
+| `dueDate` | string (ISO 8601) | No | When the task is due (e.g., `2024-01-15T10:00:00Z`) |
+| `contactId` | string | No | ID of the associated contact/lead in your CRM |
+| `companyId` | string | No | ID of the associated company in your CRM |
+
+#### Example Request
+
+```json
+{
+  "subject": "Follow up with John",
+  "description": "Discuss pricing proposal from last meeting",
+  "type": "call",
+  "ownerId": "user-123",
+  "dueDate": "2024-01-15T10:00:00Z",
+  "contactId": "contact-456",
+  "companyId": "company-789"
+}
+```
+
+#### Response
+
+Return the created task with at least an `id` field:
+
+```json
+{
+  "id": "task-abc123",
+  "subject": "Follow up with John",
+  "description": "Discuss pricing proposal from last meeting",
+  "type": "call",
+  "ownerId": "user-123",
+  "dueDate": "2024-01-15T10:00:00Z",
+  "contactId": "contact-456",
+  "companyId": "company-789",
+  "completed": false
+}
+```
+
+<Warning>
+  The `id` field is **required** in the response. Genesy uses this to track the task.
+</Warning>
+
+---
+
+### Get Task
+
+Retrieves a single task by ID.
+
+```http
+GET /tasks/:taskId
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `taskId` | string | The task ID returned from create |
+
+#### Response
+
+```json
+{
+  "id": "task-abc123",
+  "subject": "Follow up with John",
+  "description": "Discuss pricing proposal from last meeting",
+  "type": "call",
+  "ownerId": "user-123",
+  "dueDate": "2024-01-15T10:00:00Z",
+  "contactId": "contact-456",
+  "companyId": "company-789",
+  "completed": false,
+  "completedAt": null
+}
+```
+
+---
+
+### Update Task (Complete)
+
+Updates a task, typically to mark it as completed.
+
+```http
+PATCH /tasks/:taskId
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `taskId` | string | The task ID to update |
+
+#### Request Body
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `completed` | boolean | Set to `true` to mark the task as completed |
+
+#### Example Request
+
+```json
+{
+  "completed": true
+}
+```
+
+#### Response
+
+Return the updated task:
+
+```json
+{
+  "id": "task-abc123",
+  "subject": "Follow up with John",
+  "completed": true,
+  "completedAt": "2024-01-15T11:30:00Z"
+}
+```
+
+---
+
+## Batch Operations
+
+<Info>
+  Genesy uses batch endpoints to minimize API calls and improve performance. Instead of making individual requests for each task, Genesy will batch multiple operations into single requests.
+</Info>
+
+### Get Tasks Batch
+
+Retrieves multiple tasks in a single request.
+
+```http
+POST /tasks/batch
+```
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ids` | string[] | ✅ Yes | Array of task IDs to retrieve |
+
+#### Example Request
+
+```json
+{
+  "ids": ["task-abc123", "task-def456", "task-ghi789"]
+}
+```
+
+#### Response
+
+Return an array of tasks. Tasks that don't exist should be omitted from the response (don't return errors for missing tasks).
+
+```json
+[
+  {
+    "id": "task-abc123",
+    "subject": "Follow up with John",
+    "completed": false
+  },
+  {
+    "id": "task-def456",
+    "subject": "Send proposal",
+    "completed": true,
+    "completedAt": "2024-01-15T11:30:00Z"
+  }
+]
+```
+
+<Tip>
+  If a task ID doesn't exist, simply omit it from the response array rather than returning an error.
+</Tip>
+
+---
+
+### Complete Tasks Batch
+
+Marks multiple tasks as completed in a single request.
+
+```http
+PATCH /tasks/batch
+```
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ids` | string[] | ✅ Yes | Array of task IDs to complete |
+| `completed` | boolean | ✅ Yes | Set to `true` to mark tasks as completed |
+
+#### Example Request
+
+```json
+{
+  "ids": ["task-abc123", "task-def456"],
+  "completed": true
+}
+```
+
+#### Response
+
+Return an array of the updated tasks:
+
+```json
+[
+  {
+    "id": "task-abc123",
+    "subject": "Follow up with John",
+    "completed": true,
+    "completedAt": "2024-01-15T14:22:00Z"
+  },
+  {
+    "id": "task-def456",
+    "subject": "Send proposal",
+    "completed": true,
+    "completedAt": "2024-01-15T14:22:00Z"
+  }
+]
+```
+
+---
+
+## Task Schema Reference
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | ✅ Yes | Unique identifier for the task |
+| `subject` | string | ✅ Yes | Task title/subject |
+| `description` | string | No | Detailed notes |
+| `type` | string | No | Task category |
+| `ownerId` | string | No | Assigned user ID |
+| `dueDate` | string (ISO 8601) | No | Due date/time |
+| `contactId` | string | No | Associated contact ID |
+| `companyId` | string | No | Associated company ID |
+| `completed` | boolean | No | Completion status |
+| `completedAt` | string (ISO 8601) | No | When the task was completed |
+
+---
+
+## Testing Your Tasks API
+
+Before connecting to Genesy, test your task endpoints:
+
+<Steps>
+  <Step title="Test Task Creation">
+    ```bash
+    curl -X POST https://your-api.com/tasks \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"subject": "Test task", "description": "Testing integration"}'
+    ```
+  </Step>
+  <Step title="Test Batch Get Tasks">
+    ```bash
+    curl -X POST https://your-api.com/tasks/batch \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"ids": ["task-id-1", "task-id-2"]}'
+    ```
+  </Step>
+  <Step title="Test Batch Complete Tasks">
+    ```bash
+    curl -X PATCH https://your-api.com/tasks/batch \
+      -H "X-API-Key: your-secret-key" \
+      -H "Content-Type: application/json" \
+      -d '{"ids": ["task-id-1", "task-id-2"], "completed": true}'
+    ```
+  </Step>
+</Steps>
+
